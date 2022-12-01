@@ -25,9 +25,7 @@ Lastly, you can add these downloaded PDFs to Zotero to start you note taking and
 
 1. For using this scraper, you should run your own environment.
 Therefore use `python3 -m venv .venv` and install all dependencies: `pip install -r requirements.txt`.
-
 2. You'll have to install **Percollate**. Follow instructions [here](https://github.com/danburzo/percollate#installation).
-
 3. You'll also have to edit the *medium_lists.csv* and add your own public lists.
 
 ## How to use 
