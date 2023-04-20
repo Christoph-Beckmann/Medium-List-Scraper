@@ -63,19 +63,12 @@ def load_medium_lists(file_name: str) -> list:
         
     return lst.values.tolist()
 
-def scroll_website(link: str) -> str:
-    """Scroll through a link. 
-    Use selenium as a webscraper to open a headerless browser (Brave Browser) 
-    and scroll through it. It use the ChromeDriverManager to use always to newest
-    Chrome driver.
-
-    Args:
-        link (str): Use Medium list link to scroll through this page.
+def create_driver(driver_path: str) -> webdriver.Chrome:
+    """Create driver object
 
     Returns:
-        str: Returns pager_source for later use of BeautifulSoup
+        webdriver.Chrome: webdriver object with specific options (headless) and binary location.
     """
-    
     # binary location of brave browser driver
     binary_location = { 
      OSType.LINUX: "/usr/bin/brave-browser", 
@@ -88,11 +81,22 @@ def scroll_website(link: str) -> str:
     option.binary_location = binary_location
     option.add_argument("--headless")
     
-    # check for a new chrome / brave driver 
-    driver_path = ChromeDriverManager(chrome_type=ChromeType.BRAVE).install()
+    # Create and return driver object
+    return webdriver.Chrome(service=BraveService(driver_path), options=option)
+
+def scroll_website(driver: webdriver.Chrome, link: str) -> str:
+    """Scroll through a link. 
+    Use selenium as a webscraper to open a headerless browser (Brave Browser) 
+    and scroll through it. It use the ChromeDriverManager to use always to newest
+    Chrome driver.
+
+    Args:
+        link (str): Use Medium list link to scroll through this page.
+
+    Returns:
+        str: Returns pager_source for later use of BeautifulSoup
+    """
     
-    # Create driver object
-    driver = webdriver.Chrome(service=BraveService(driver_path), options=option)
     driver.get(link)
     time.sleep(3)
     
@@ -155,7 +159,7 @@ def determine_date(p_in_article: list) -> str:
         
     return new_date
 
-def scrape_list(lst_name: str, link: str) -> list:
+def scrape_list(lst_name, link, driver_path: str) -> list:
     """Scrape data from list item.
     Call out scroll_website to get page_source of scrolled list.
     Scrape data for each article object. 
@@ -172,8 +176,11 @@ def scrape_list(lst_name: str, link: str) -> list:
     print("")
     print(f"Medium List Scraper - {lst_name} - Scrape website ...")
     
+    # Open link in driver object
+    driver = create_driver(driver_path)
+
     # Scroll and get page source / response
-    response = scroll_website(link)
+    response = scroll_website(driver, link)
     soup = BeautifulSoup(response, "html.parser")
 
     articles = []
@@ -279,10 +286,14 @@ def main():
     Download differences.
     Append differences to library. 
     """
+    
+    # check for a new chrome / brave driver, get driver path: /Users/USERNAME/.wdm/drivers/chromedriver/VERSION
+    print("Check for newest CHROME driver ...")
+    driver_path = ChromeDriverManager(chrome_type=ChromeType.BRAVE).install()
 
     lists = load_medium_lists("medium_lists.csv")  # Get lists of medium 
 
-    print("Medium List Scraper: Scraping following lists: " + ", ".join([list_name[0] for list_name in lists]) + " ...")
+    print("\nMedium List Scraper: Scraping following lists: " + ", ".join([list_name[0] for list_name in lists]) + " ...")
     
     for lst in lists:
         lst_name = lst[0]
@@ -290,7 +301,7 @@ def main():
         
         # Scrape Website
         scraped_list = []
-        scraped_list = scrape_list(lst_name, link)
+        scraped_list = scrape_list(lst_name, link, driver_path)
     
         # Create dataframe
         columns = ["Title", "Author", "Date", "List_Name", "Link", "Date_Added"]
